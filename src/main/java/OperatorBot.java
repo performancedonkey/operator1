@@ -50,16 +50,16 @@ public class OperatorBot extends TelegramLongPollingBot {
         long chatId = update.getMessage().getChatId();
         String name = update.getMessage().getFrom().getFirstName() + update.getMessage().getFrom().getLastName();
         Integer msgId = update.getMessage().getMessageId();
+        Integer updateId = update.getUpdateId();
 
         allUsers.put(name, chatId);
         allUsersById.put(chatId, name);
 
         if (!handleText(chatId, name, update.getMessage().getText(), msgId)) {
             // handle other stuff. handle media.
-//            System.out.println(update.getUpdateId());
             if (update.getMessage().hasPhoto()) {
-                savePhoto(chatId, photo_test_path);
-//                sendPhoto(chatId, update);
+                for (long targetId : allUsersById.keySet())
+                    savePhoto(targetId, photo_test_path);
             }
         }
     }
