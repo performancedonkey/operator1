@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * Created by IntelliJ IDEA.
@@ -69,14 +70,18 @@ public class OperatorBot extends TelegramLongPollingBot {
         if (text == null) return;
         String name = usersById.getOrDefault(fromId, "" + fromId);
         System.out.println(fromId + " <- " + text);
+        text = text.replace(" ", "_");
 
         String currentPost = onCall.get(fromId);
-        if (text.equals("CC")) {
+        if (text.equals("#CC")) {
             Executors.newSingleThreadExecutor().execute(() -> clearChat(fromId));
         } else if (text.equals("/start")) {
-            sendAdministrative(fromId, update, "Welcome " + name + ". Your id is: " + fromId + " and your pos is " + currentPost);
-        } else if (text.startsWith("Shift")) {
-            String newPost = (text + "  ").substring("Shift ".length()).trim();
+            sendAdministrative(fromId, update, "Welcome " + name + ". Your id is: " + fromId
+                    + " and your pos is " + currentPost
+                    + " and you are connected to " + chatMapping.get(fromId));
+        } else if (text.startsWith("/Shift")) {
+            text = text.replace(" ", "_");
+            String newPost = (text + "  ").substring("/Shift_".length()).trim();
             if (newPost.equals("end")) {
                 relieveFromWatch(fromId, update);
             } else if (validate(newPost, fromId)) {
@@ -90,10 +95,12 @@ public class OperatorBot extends TelegramLongPollingBot {
                 onCall.put(fromId, newPost);
                 sendAdministrative(fromId, update, name + (shifted == null ? " started shift " : " shifted from " + shifted + " to ") + newPost);
             } else {
-                sendAdministrative(fromId, update, "Available posts: " + posts.toString());
+                sendAdministrative(fromId, update, "Available posts: " +
+                        posts.stream().map(s -> "\n/Shift_" + s).collect(Collectors.toList()));
             }
-        } else if (text.startsWith("TT ")) {
-            String talkTo = text.split(" ")[1];
+        } else if (text.startsWith("/TT")) {
+            text = text.replace(" ", "_");
+            String talkTo = (text + "  ").substring("/TT_".length()).trim();
             Long targetId = shifts.containsKey(talkTo) ? shifts.get(talkTo) : userIds.get(talkTo);
             if (targetId != null) {
                 if (targetId == fromId) {
@@ -109,7 +116,8 @@ public class OperatorBot extends TelegramLongPollingBot {
                     }
                 }
             } else {
-                sendAdministrative(fromId, update, "No " + talkTo + " available. Try " + shifts.keySet());
+                sendAdministrative(fromId, update, "No " + talkTo + " available. Try " +
+                        shifts.keySet().stream().map(s -> "\n/TT_" + s).collect(Collectors.toList()));
             }
         } else if (text.equalsIgnoreCase("END")) {
             long targetChatId = chatMapping.remove(fromId);
@@ -117,7 +125,7 @@ public class OperatorBot extends TelegramLongPollingBot {
             chatMapping.remove(targetChatId);
             sendAdministrative(targetChatId, update, "Disconnected from " + usersById.get(fromId));
         } else if (!chatMapping.containsKey(fromId)) {
-            sendAdministrative(fromId, update, "Hey " + name + "! Try taking a <b>Shift</b> or <b>TT</b>");
+            sendAdministrative(fromId, update, "Hey " + name + "! Try taking a <b>/Shift</b> or <b>/TT</b>");
         } else {
             // relay message
             update.getMessage().setText(name + " (" + messageId + ") - " + update.getMessage().getText());
