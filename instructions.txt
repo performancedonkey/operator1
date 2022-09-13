@@ -1,0 +1,5 @@
+Step 1 - register as user.
+
+A central user can send a message to facilitate registration
+
+Step 2 - take a shift. Only users during a shift can request routing from the operator.

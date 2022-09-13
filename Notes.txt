@@ -1,0 +1,9 @@
+{"ok":true,"result":{"file_id":"AgACAgQAAxkBAAIBrGMfpb_oXxVQNnyp9Oak_xQNlYyCAAKAuzEb2L_5UA6W0NfzNkZMAQADAgADeQADKQQ","file_unique_id":"AQADgLsxG9i_-VB-","file_size":104144,"file_path":"photos/file_0.jpg"}}
+
+
+5357387837:AAG8NhHJCreHh7N_uQFqF_MY-v3v6Lt8Sq4
+
+
+https://api.telegram.org/bot<bot_token>/getFile?file_id=the_file_id 
+
+https://api.telegram.org/file/bot<token>/<file_path> 
