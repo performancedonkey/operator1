@@ -19,7 +19,7 @@ public class AudioForwarder implements Forwarder {
     }
 
     @Override public String getId(Update update) {
-        return update.getMessage().getVoice().getFileId();
+        return update.getMessage().getAudio().getFileId();
     }
 
     @Override public void prepare(long targetId, Update update, InputFile inputFile) {
