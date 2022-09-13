@@ -29,12 +29,16 @@ public class PhotoForwarder implements MsgForwarder {
         sender.setCaption(update.getMessage().getCaption());
         sender.setPhoto(inputFile);
     }
-    
+
     @Override public void forward(TelegramLongPollingBot bot) {
         try {
             bot.execute(sender);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override public String getText(Update update) {
+        return "Photo with " + update.getMessage().getCaption();
     }
 }

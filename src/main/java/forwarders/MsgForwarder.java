@@ -24,8 +24,14 @@ public interface MsgForwarder {
 
     default void forward(TelegramLongPollingBot bot, long fromId, long targetId, Update update) {
         if (targetId == 0) return;
+
         prepare(targetId, update, getFile(targetId, bot, update));
         forward(bot);
+        log(fromId, targetId, getText(update));
+    }
+
+    default String getText(Update update) {
+        return update.getMessage().getText();
     }
 
     default InputFile getFile(long targetId, TelegramLongPollingBot bot, Update update) {

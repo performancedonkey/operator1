@@ -22,7 +22,6 @@ public class AudioForwarder implements MsgForwarder {
         sender.setChatId(targetId);
         sender.setCaption(update.getMessage().getCaption());
         sender.setAudio(inputFile);
-        log(targetId, targetId, "Audio");
     }
 
     @Override public void forward(TelegramLongPollingBot bot) {
@@ -31,5 +30,9 @@ public class AudioForwarder implements MsgForwarder {
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override public String getText(Update update) {
+        return "Audio";
     }
 }

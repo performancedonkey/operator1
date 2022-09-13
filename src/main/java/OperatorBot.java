@@ -78,7 +78,7 @@ public class OperatorBot extends TelegramLongPollingBot {
     private boolean handleText(long fromId, String name, String text, Integer messageId) {
         if (text == null) return false;
 
-        System.out.println(fromId + ": " + text);
+        System.out.println(fromId + " <- " + text);
 
         if (text.startsWith("Shift ")) {
             String position = text.split(" ")[1];
