@@ -1,37 +1,31 @@
 package forwarders;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by IntelliJ IDEA.
  * User: Mati
- * Date: 2022-09-12
+ * Date: 2022-09-13
  */
-public class MessageForwarder implements MsgForwarder {
-    private final SendMessage sender = new SendMessage();
+public class MessageForwarder {
+
+    private final List<Forwarder> forwarders = new ArrayList<>();
 
     public MessageForwarder() {
-        sender.enableHtml(true);
-    }
-    
-    @Override public String getId(Update update) {
-        return update.getUpdateId().toString();
+        forwarders.add(new TextForwarder());
+        forwarders.add(new AudioForwarder());
+        forwarders.add(new VoiceForwarder());
+        forwarders.add(new PhotoForwarder());
+        forwarders.add(new VideoNoteForwarder());
     }
 
-    @Override public void prepare(long targetId, Update update, InputFile inputFile) {
-        sender.setChatId(targetId);
-        sender.setText(update.getMessage().getText());
-    }
-    
-    @Override public void forward(TelegramLongPollingBot bot) {
-        try {
-            bot.execute(sender);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
+    public void forward(TelegramLongPollingBot bot, long fromId, long targetId, Update update) {
+        for (int i = 0; i < forwarders.size(); i++) {
+            forwarders.get(i).forward(bot, fromId, targetId, update);
         }
     }
 }

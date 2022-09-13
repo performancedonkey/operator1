@@ -1,8 +1,7 @@
-import forwarders.*;
+import forwarders.MessageForwarder;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -26,14 +25,14 @@ public class OperatorBot extends TelegramLongPollingBot {
         return "5357387837:AAG8NhHJCreHh7N_uQFqF_MY-v3v6Lt8Sq4";
     }
 
-    private final static HashMap<String, Long> allUsers = new HashMap<>();
-    private final static Long2ObjectHashMap<String> allUsersById = new Long2ObjectHashMap<>();
+    private final static HashMap<String, Long> userIds = new HashMap<>();
+    private final static Long2ObjectHashMap<String> usersById = new Long2ObjectHashMap<>();
     // Operator bot should be managing multiple hierarchies. all this should be abstracted
 
     // TODO this should be under one structure
     private final static Set<String> posts = new HashSet<>();
     private final static HashMap<String, Long> shifts = new HashMap<>();
-    private final static Long2ObjectHashMap<String> who = new Long2ObjectHashMap<>();
+    private final static Long2ObjectHashMap<String> onCall = new Long2ObjectHashMap<>();
 
     private final static Long2LongHashMap chatMapping = new Long2LongHashMap(0);
 
@@ -44,6 +43,7 @@ public class OperatorBot extends TelegramLongPollingBot {
         posts.add("ped");
     }
 
+    private final MessageForwarder forwarder = new MessageForwarder();
     public void onUpdateReceived(Update update) {
 //        long fromId = update.getMessage().getChatId();
         Long fromId = update.getMessage().getFrom().getId();
@@ -51,111 +51,96 @@ public class OperatorBot extends TelegramLongPollingBot {
         Integer msgId = update.getMessage().getMessageId();
         Integer updateId = update.getUpdateId();
 
-        allUsers.put(name, fromId);
-        allUsersById.put(fromId.longValue(), name);
+        userIds.put(name, fromId);
+        usersById.put(fromId.longValue(), name);
+
+        parseCommands(fromId, update, msgId);
 
         long targetId = chatMapping.getOrDefault(fromId, fromId);
+        boolean isConnected = chatMapping.containsKey(fromId);
 
-        if (handleText(fromId, name, update.getMessage().getText(), msgId)) return;
-        if (update.getMessage().hasText())
-            forward(new MessageForwarder(), fromId, targetId, update);
-
-        // Handle media
-        if (update.getMessage().hasPhoto())
-            forward(new PhotoForwarder(), fromId, targetId, update);
-
-        if (update.getMessage().hasAudio())
-            forward(new AudioForwarder(), fromId, targetId, update);
-
-        if (update.getMessage().hasVoice())
-            forward(new VoiceForwarder(), fromId, targetId, update);
-    }
-
-    private void forward(MsgForwarder forwarder, long fromId, long targetId, Update update) {
         forwarder.forward(this, fromId, targetId, update);
     }
 
-    private boolean handleText(long fromId, String name, String text, Integer messageId) {
-        if (text == null) return false;
+    private final int BOTID = 0;
 
+    private void parseCommands(long fromId, Update update, Integer messageId) {
+        String text = update.getMessage().getText();
+        if (text == null) return;
+        String name = usersById.getOrDefault(fromId, "" + fromId);
         System.out.println(fromId + " <- " + text);
 
-        if (text.startsWith("Shift ")) {
-            String position = text.split(" ")[1];
-            if (position.equals("end")) {
-                relieveFromWatch(fromId, fromId, "");
-            } else if (validate(position, fromId)) {
-                Long relieved = shifts.put(position, fromId);
-                who.put(fromId, position);
-                sendMessage(fromId, fromId, name + " started shift " + position);
+        String currentPost = onCall.get(fromId);
+        if (text.equals("CC")) {
+            Executors.newSingleThreadExecutor().execute(() -> clearChat(fromId));
+        } else if (text.equals("/start")) {
+            sendAdministrative(fromId, update, "Welcome " + name + ". Your id is: " + fromId + " and your pos is " + currentPost);
+        } else if (text.startsWith("Shift")) {
+            String newPost = (text + "  ").substring("Shift ".length()).trim();
+            if (newPost.equals("end")) {
+                relieveFromWatch(fromId, update);
+            } else if (validate(newPost, fromId)) {
+                if (currentPost != null && !newPost.equals(currentPost)) {
+                    relieveFromWatch(fromId, update);//, " Relieved by " + name);
+                }
+                Long relieved = shifts.put(newPost, fromId);
+                String shifted = onCall.get(fromId);
                 if (relieved != null)
-                    relieveFromWatch(fromId, relieved, " Relieved by " + name);
+                    relieveFromWatch(relieved, update, newPost);//, " Relieved by " + name);
+                onCall.put(fromId, newPost);
+                sendAdministrative(fromId, update, name + (shifted == null ? " started shift " : " shifted from " + shifted + " to ") + newPost);
             } else {
-                sendMessage(fromId, fromId, "Available posts: " + posts.toString());
+                sendAdministrative(fromId, update, "Available posts: " + posts.toString());
             }
-        } else {
-            String requestFrom = who.getOrDefault(fromId, name);
-            if (text.startsWith("TT ")) {
-                String talkTo = text.split(" ")[1];
-                Long targetId = shifts.get(talkTo);
-                if (targetId == null) {
-                    targetId = allUsers.get(talkTo);
-                }
-                if (targetId != null) {
-                    long oldValue = chatMapping.put(targetId.longValue(), fromId);
-//                    if (oldValue == 0) {
-                    sendMessage(fromId, fromId, "You are now connected to " + talkTo);
-                    sendMessage(fromId, targetId, requestFrom + " has requested to talk to " + talkTo);
-                    chatMapping.put(fromId, targetId.longValue());
-//                    }
+        } else if (text.startsWith("TT ")) {
+            String talkTo = text.split(" ")[1];
+            Long targetId = shifts.containsKey(talkTo) ? shifts.get(talkTo) : userIds.get(talkTo);
+            if (targetId != null) {
+                if (targetId == fromId) {
+                    sendAdministrative(fromId, update, "Fool, you cant connect to yourself!");
                 } else {
-                    text = "Can't connect to " + talkTo + ". Available: " + shifts.keySet();
-                    sendMessage(fromId, fromId, text);
+                    long oldChat = chatMapping.put(targetId.longValue(), fromId);
+                    sendAdministrative(fromId, update, "You are now connected to " + talkTo);
+                    chatMapping.put(fromId, targetId.longValue());
+                    sendAdministrative(targetId, update, name + " has requested to talk to " + talkTo);
+                    if (oldChat != fromId) {
+                        sendAdministrative(oldChat, update, name + " has disconnected you from " + talkTo);
+                        chatMapping.remove(oldChat);
+                    }
                 }
-            } else if (text.equals("CC")) {
-                Executors.newSingleThreadExecutor().execute(() -> clearChat(fromId));
-            } else if (text.equals("/start")) {
-                text = "Welcome " + name + ". Your id is: " + fromId;
-
-                sendMessage(fromId, fromId, text);
-            } else if (text.equals("END")) {
-                long targetChatId = chatMapping.remove(fromId);
-
-                sendMessage(fromId, fromId, "Disconnected from " + targetChatId);
-                sendMessage(fromId, targetChatId, "Disconnected from " + fromId);
-            } else if (chatMapping.containsKey(fromId)) {
-                // relay message
-                long targetChatId = chatMapping.get(fromId);
-
-                sendMessage(fromId, targetChatId, messageId + " | " + requestFrom + ": " + text);
             } else {
-                text = "Hey " + requestFrom + "! Try taking a <b>Shift</b> or <b>TT</b>";
-                sendMessage(fromId, fromId, text);
+                sendAdministrative(fromId, update, "No " + talkTo + " available. Try " + shifts.keySet());
             }
+        } else if (text.equalsIgnoreCase("END")) {
+            long targetChatId = chatMapping.remove(fromId);
+            sendAdministrative(fromId, update, "Disconnected from " + usersById.get(targetChatId));
+            chatMapping.remove(targetChatId);
+            sendAdministrative(targetChatId, update, "Disconnected from " + usersById.get(fromId));
+        } else if (!chatMapping.containsKey(fromId)) {
+            sendAdministrative(fromId, update, "Hey " + name + "! Try taking a <b>Shift</b> or <b>TT</b>");
+        } else {
+            // relay message
+            update.getMessage().setText(name + " (" + messageId + ") - " + update.getMessage().getText());
         }
-        return true;
     }
 
-    private void relieveFromWatch(long fromId, long relievedId, String text) {
-        String pos = who.remove(relievedId);
-        shifts.remove(pos);
-        sendMessage(fromId, relievedId, allUsersById.get(relievedId) + " your watch has ended: " + pos + ". " + text);
+    private void relieveFromWatch(long relievedId, Update update) {
+        relieveFromWatch(relievedId, update, onCall.remove(relievedId));
     }
 
-    private final SendMessage response = new SendMessage();
-    private void sendMessage(long fromId, long targetId, String text) {
-        response.enableHtml(true);
+    private void relieveFromWatch(long relievedId, Update update, String position) {
+        shifts.remove(position);
+        sendAdministrative(relievedId, update, usersById.get(relievedId) + " your watch has ended: " + position + ". ");
+    }
 
-        response.setChatId(targetId);
+    private final MessageForwarder administrator = new MessageForwarder();
+    private void sendAdministrative(long targetId, Update update, String text) {
+        if (text == null) return;
 
-        response.setText(text);
-
-        try {
-            execute(response);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
-        System.out.println(fromId + " -> " + targetId + " = " + text);
+        String oldText = update.getMessage().getText();
+        update.getMessage().setText(text);
+        administrator.forward(this, BOTID, targetId, update);
+        update.getMessage().setText(oldText);
     }
 
     private boolean validate(String position, long chatId) {

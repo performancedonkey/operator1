@@ -11,8 +11,12 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
  * User: Mati
  * Date: 2022-09-12
  */
-public class VoiceForwarder implements MsgForwarder {
+public class VoiceForwarder implements Forwarder {
     private final SendVoice sender = new SendVoice();
+
+    @Override public boolean hasMedia(Update update) {
+        return update.getMessage().hasVoice();
+    }
 
     @Override public String getId(Update update) {
         return update.getMessage().getVoice().getFileId();
@@ -30,5 +34,9 @@ public class VoiceForwarder implements MsgForwarder {
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override public String getText(Update update) {
+        return "Voice";
     }
 }

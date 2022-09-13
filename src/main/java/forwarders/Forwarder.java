@@ -16,14 +16,18 @@ import java.nio.file.StandardCopyOption;
  * User: Mati
  * Date: 2022-09-12
  */
-public interface MsgForwarder {
+public interface Forwarder {
     final GetFile getFile = new GetFile();
 
     final String mediaPath = "C:/tmp/TGBotMedia/";
     final String tgbot = "https://api.telegram.org/file/bot";
 
+    default boolean hasMedia(Update update) {
+        return false;
+    }
+
     default void forward(TelegramLongPollingBot bot, long fromId, long targetId, Update update) {
-        if (targetId == 0) return;
+        if (!hasMedia(update) || targetId == 0 || fromId == targetId) return;
 
         prepare(targetId, update, getFile(targetId, bot, update));
         forward(bot);
@@ -62,4 +66,5 @@ public interface MsgForwarder {
     public void prepare(long targetId, Update update, InputFile inputFile);
 
     void forward(TelegramLongPollingBot bot);
+
 }
