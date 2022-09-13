@@ -83,10 +83,10 @@ public class OperatorBot extends TelegramLongPollingBot {
             text = text.replace(" ", "_");
             String newPost = (text + "  ").substring("/Shift_".length()).trim();
             if (newPost.equals("end")) {
-                relieveFromWatch(fromId, update);
+                relieveFromWatch(fromId, update, currentPost);
             } else if (validate(newPost, fromId)) {
                 if (currentPost != null && !newPost.equals(currentPost)) {
-                    relieveFromWatch(fromId, update);//, " Relieved by " + name);
+                    relieveFromWatch(fromId, update, currentPost);//, " Relieved by " + name);
                 }
                 Long relieved = shifts.put(newPost, fromId);
                 String shifted = onCall.get(fromId);
@@ -123,20 +123,18 @@ public class OperatorBot extends TelegramLongPollingBot {
             long targetChatId = chatMapping.remove(fromId);
             sendAdministrative(fromId, update, "Disconnected from " + usersById.get(targetChatId));
             chatMapping.remove(targetChatId);
-            sendAdministrative(targetChatId, update, "Disconnected from " + usersById.get(fromId));
+            sendAdministrative(targetChatId, update, usersById.get(fromId) + " terminated the connection");
         } else if (!chatMapping.containsKey(fromId)) {
             sendAdministrative(fromId, update, "Hey " + name + "! Try taking a <b>/Shift</b> or <b>/TT</b>");
         } else {
             // relay message
-            update.getMessage().setText(name + " (" + messageId + ") - " + update.getMessage().getText());
+            String header = "<i>" + name + " (" + messageId + ")</i> - ";
+            update.getMessage().setText(header + text);
         }
     }
 
-    private void relieveFromWatch(long relievedId, Update update) {
-        relieveFromWatch(relievedId, update, onCall.remove(relievedId));
-    }
-
     private void relieveFromWatch(long relievedId, Update update, String position) {
+        onCall.remove(relievedId);
         shifts.remove(position);
         sendAdministrative(relievedId, update, usersById.get(relievedId) + " your watch has ended: " + position + ". ");
     }
