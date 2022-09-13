@@ -14,12 +14,15 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 public class MessageForwarder implements MsgForwarder {
     private final SendMessage sender = new SendMessage();
 
+    public MessageForwarder() {
+        sender.enableHtml(true);
+    }
+    
     @Override public String getId(Update update) {
         return update.getUpdateId().toString();
     }
 
     @Override public void prepare(long targetId, Update update, InputFile inputFile) {
-        sender.enableHtml(true);
         sender.setChatId(targetId);
         sender.setText(update.getMessage().getText());
     }

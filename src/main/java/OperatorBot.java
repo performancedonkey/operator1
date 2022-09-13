@@ -1,7 +1,4 @@
-import forwarders.AudioForwarder;
-import forwarders.MsgForwarder;
-import forwarders.PhotoForwarder;
-import forwarders.VoiceForwarder;
+import forwarders.*;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -32,6 +29,8 @@ public class OperatorBot extends TelegramLongPollingBot {
     private final static HashMap<String, Long> allUsers = new HashMap<>();
     private final static Long2ObjectHashMap<String> allUsersById = new Long2ObjectHashMap<>();
     // Operator bot should be managing multiple hierarchies. all this should be abstracted
+
+    // TODO this should be under one structure
     private final static Set<String> posts = new HashSet<>();
     private final static HashMap<String, Long> shifts = new HashMap<>();
     private final static Long2ObjectHashMap<String> who = new Long2ObjectHashMap<>();
@@ -47,19 +46,19 @@ public class OperatorBot extends TelegramLongPollingBot {
 
     public void onUpdateReceived(Update update) {
 //        long fromId = update.getMessage().getChatId();
-        long fromId = update.getMessage().getFrom().getId();
+        Long fromId = update.getMessage().getFrom().getId();
         String name = update.getMessage().getFrom().getFirstName() + update.getMessage().getFrom().getLastName();
         Integer msgId = update.getMessage().getMessageId();
         Integer updateId = update.getUpdateId();
 
         allUsers.put(name, fromId);
-        allUsersById.put(fromId, name);
+        allUsersById.put(fromId.longValue(), name);
 
         long targetId = chatMapping.getOrDefault(fromId, fromId);
 
         if (handleText(fromId, name, update.getMessage().getText(), msgId)) return;
-//        if (update.getMessage().hasText())
-//            forward(new MessageForwarder(), fromId, targetId, update);
+        if (update.getMessage().hasText())
+            forward(new MessageForwarder(), fromId, targetId, update);
 
         // Handle media
         if (update.getMessage().hasPhoto())
@@ -73,10 +72,9 @@ public class OperatorBot extends TelegramLongPollingBot {
     }
 
     private void forward(MsgForwarder forwarder, long fromId, long targetId, Update update) {
-        // Forward Data
-        forwarder.forward(targetId, this, update);
+        forwarder.forward(this, fromId, targetId, update);
     }
-    
+
     private boolean handleText(long fromId, String name, String text, Integer messageId) {
         if (text == null) return false;
 

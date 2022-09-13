@@ -22,7 +22,7 @@ public interface MsgForwarder {
     final String mediaPath = "C:/tmp/TGBotMedia/";
     final String tgbot = "https://api.telegram.org/file/bot";
 
-    default void forward(long targetId, TelegramLongPollingBot bot, Update update) {
+    default void forward(TelegramLongPollingBot bot, long fromId, long targetId, Update update) {
         if (targetId == 0) return;
         prepare(targetId, update, getFile(targetId, bot, update));
         forward(bot);
