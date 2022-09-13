@@ -115,7 +115,7 @@ public class OperatorBot extends TelegramLongPollingBot {
             } else if (text.equals("CC")) {
                 Executors.newSingleThreadExecutor().execute(() -> clearChat(fromId));
             } else if (text.equals("/start")) {
-                text = "Welcome " + name + ". Your id is:" + fromId;
+                text = "Welcome " + name + ". Your id is: " + fromId;
 
                 sendMessage(fromId, fromId, text);
             } else if (text.equals("END")) {
