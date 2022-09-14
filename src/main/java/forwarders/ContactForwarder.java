@@ -1,37 +1,33 @@
 package forwarders;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.send.SendContact;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
-import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-import java.util.Comparator;
 
 /**
  * Created by IntelliJ IDEA.
  * User: Mati
  * Date: 2022-09-12
  */
-public class PhotoForwarder implements Forwarder {
-    private final SendPhoto sender = new SendPhoto();
+public class ContactForwarder implements Forwarder {
+    private final SendContact sender = new SendContact();
 
     @Override public boolean hasMedia(Update update) {
-        return update.getMessage().hasPhoto();
+        return update.getMessage().hasContact();
     }
 
     @Override public String getId(Update update) {
-        return update.getMessage().getPhoto().stream()
-                .sorted(Comparator.comparing(PhotoSize::getFileSize).reversed())
-                .findFirst()
-                .orElse(null).getFileId();
+        return update.getMessage().getContact().getUserId().toString();
     }
 
     @Override public void prepare(long targetId, Update update, InputFile inputFile) {
         sender.setChatId(targetId);
-        sender.setCaption(update.getMessage().getCaption());
-        sender.setPhoto(inputFile);
+        sender.setFirstName(update.getMessage().getContact().getFirstName());
+        sender.setLastName(update.getMessage().getContact().getLastName());
+        sender.setPhoneNumber(update.getMessage().getContact().getPhoneNumber());
+        sender.setVCard(update.getMessage().getContact().getVCard());
     }
 
     @Override public void forward(TelegramLongPollingBot bot) throws TelegramApiException {
@@ -39,6 +35,6 @@ public class PhotoForwarder implements Forwarder {
     }
 
     @Override public String getText(Update update) {
-        return "Photo with " + update.getMessage().getCaption();
+        return "Contact";
     }
 }

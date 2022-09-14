@@ -4,6 +4,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.File;
 import java.net.URL;
@@ -30,7 +31,9 @@ public interface Forwarder {
         if (!hasMedia(update) || targetId == 0 || fromId == targetId) return;
 
         prepare(targetId, update, getFile(targetId, bot, update));
-        forward(bot);
+        try {
+            forward(bot);
+        } catch (TelegramApiException e) {}
         log(fromId, targetId, getText(update));
     }
 
@@ -43,8 +46,8 @@ public interface Forwarder {
             getFile.setFileId(getId(update));
             org.telegram.telegrambots.meta.api.objects.File file = bot.execute(getFile);
             String url = tgbot + bot.getBotToken() + "/" + file.getFilePath();
-
-            String filepath = mediaPath + file.getFilePath();
+            String filename = update.getMessage().getDocument().getFileName();
+            String filepath = mediaPath + filename;
             // Ensure directory exists
             new File(filepath).getParentFile().mkdirs();
             // Download file to local dir
@@ -65,6 +68,6 @@ public interface Forwarder {
 
     public void prepare(long targetId, Update update, InputFile inputFile);
 
-    void forward(TelegramLongPollingBot bot);
+    void forward(TelegramLongPollingBot bot) throws TelegramApiException;
 
 }

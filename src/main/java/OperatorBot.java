@@ -78,7 +78,7 @@ public class OperatorBot extends TelegramLongPollingBot {
         } else if (text.equals("/start")) {
             sendAdministrative(fromId, update, "Welcome " + name + ". Your id is: " + fromId
                     + " and your pos is " + currentPost
-                    + " and you are connected to " + chatMapping.get(fromId));
+                    + " and you are connected to " + getConnectedTo(fromId));
         } else if (text.startsWith("/Shift")) {
             text = text.replace(" ", "_");
             String newPost = (text + "  ").substring("/Shift_".length()).trim();
@@ -131,6 +131,11 @@ public class OperatorBot extends TelegramLongPollingBot {
             String header = "<i>" + name + " (" + messageId + ")</i> - ";
             update.getMessage().setText(header + text);
         }
+    }
+    private String getConnectedTo(long userId) {
+        long targetId = chatMapping.get(userId);
+        if (targetId == 0) return "";
+        return usersById.get(chatMapping.get(userId));
     }
 
     private void relieveFromWatch(long relievedId, Update update, String position) {

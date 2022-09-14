@@ -26,14 +26,12 @@ public class VoiceForwarder implements Forwarder {
         sender.setChatId(targetId);
         sender.setCaption(update.getMessage().getCaption());
         sender.setVoice(inputFile);
+        sender.setDuration(update.getMessage().getVoice().getDuration());
+        sender.setCaptionEntities(update.getMessage().getCaptionEntities());
     }
 
-    @Override public void forward(TelegramLongPollingBot bot) {
-        try {
-            bot.execute(sender);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
+    @Override public void forward(TelegramLongPollingBot bot) throws TelegramApiException {
+        bot.execute(sender);
     }
 
     @Override public String getText(Update update) {

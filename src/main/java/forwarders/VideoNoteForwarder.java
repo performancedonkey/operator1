@@ -26,14 +26,13 @@ public class VideoNoteForwarder implements Forwarder {
     @Override public void prepare(long targetId, Update update, InputFile inputFile) {
         sender.setChatId(targetId);
         sender.setVideoNote(inputFile);
+        sender.setDuration(update.getMessage().getVideoNote().getDuration());
+        sender.setLength(update.getMessage().getVideoNote().getLength());
+//        sender.setThumb(update.getMessage().getVideoNote().getThumb());
     }
 
-    @Override public void forward(TelegramLongPollingBot bot) {
-        try {
-            bot.execute(sender);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
+    @Override public void forward(TelegramLongPollingBot bot) throws TelegramApiException {
+        bot.execute(sender);
     }
 
     @Override public String getText(Update update) {

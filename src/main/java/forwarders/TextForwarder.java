@@ -31,12 +31,8 @@ public class TextForwarder implements Forwarder {
         sender.setText(update.getMessage().getText());
     }
 
-    @Override public void forward(TelegramLongPollingBot bot) {
-        try {
-            bot.execute(sender);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
+    @Override public void forward(TelegramLongPollingBot bot) throws TelegramApiException {
+        bot.execute(sender);
     }
 
     @Override public String getText(Update update) {

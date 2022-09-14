@@ -27,15 +27,14 @@ public class LocationForwarder implements Forwarder {
         sender.setChatId(targetId);
         sender.setLatitude(update.getMessage().getLocation().getLatitude());
         sender.setLongitude(update.getMessage().getLocation().getLongitude());
-//        sender.setLongitude(update.getMessage().getLocation().getLongitude());
+        sender.setHeading(update.getMessage().getLocation().getHeading());
+        sender.setHorizontalAccuracy(update.getMessage().getLocation().getHorizontalAccuracy());
+        sender.setLivePeriod(update.getMessage().getLocation().getLivePeriod());
+        sender.setProximityAlertRadius(update.getMessage().getLocation().getProximityAlertRadius());
     }
 
-    @Override public void forward(TelegramLongPollingBot bot) {
-        try {
-            bot.execute(sender);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
+    @Override public void forward(TelegramLongPollingBot bot) throws TelegramApiException {
+        bot.execute(sender);
     }
 
     @Override public String getText(Update update) {

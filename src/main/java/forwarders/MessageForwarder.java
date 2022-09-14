@@ -21,6 +21,10 @@ public class MessageForwarder {
         forwarders.add(new VoiceForwarder());
         forwarders.add(new PhotoForwarder());
         forwarders.add(new VideoNoteForwarder());
+        forwarders.add(new LocationForwarder());
+        forwarders.add(new DocumentForwarder());
+        forwarders.add(new ContactForwarder());
+        forwarders.add(new PollForwarder());
     }
 
     public void forward(TelegramLongPollingBot bot, long fromId, long targetId, Update update) {
