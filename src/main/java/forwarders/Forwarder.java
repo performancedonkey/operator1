@@ -2,6 +2,7 @@ package forwarders;
 
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
+import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -46,7 +47,8 @@ public interface Forwarder {
             getFile.setFileId(getId(update));
             org.telegram.telegrambots.meta.api.objects.File file = bot.execute(getFile);
             String url = tgbot + bot.getBotToken() + "/" + file.getFilePath();
-            String filename = update.getMessage().getDocument().getFileName();
+            Document document = update.getMessage().getDocument();
+            String filename = document == null ? file.getFilePath() : document.getFileName();
             String filepath = mediaPath + filename;
             // Ensure directory exists
             new File(filepath).getParentFile().mkdirs();

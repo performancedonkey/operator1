@@ -46,21 +46,25 @@ public class OperatorBot extends TelegramLongPollingBot {
 
     private final MessageForwarder forwarder = new MessageForwarder();
     public void onUpdateReceived(Update update) {
-//        long fromId = update.getMessage().getChatId();
-        Long fromId = update.getMessage().getFrom().getId();
-        String name = update.getMessage().getFrom().getFirstName() + update.getMessage().getFrom().getLastName();
-        Integer msgId = update.getMessage().getMessageId();
-        Integer updateId = update.getUpdateId();
+        try {
+            //        long fromId = update.getMessage().getChatId();
+            Long fromId = update.getMessage().getFrom().getId();
+            String name = update.getMessage().getFrom().getFirstName() + update.getMessage().getFrom().getLastName();
+            Integer msgId = update.getMessage().getMessageId();
+            Integer updateId = update.getUpdateId();
 
-        userIds.put(name, fromId);
-        usersById.put(fromId.longValue(), name);
+            userIds.put(name, fromId);
+            usersById.put(fromId.longValue(), name);
 
-        parseCommands(fromId, update, msgId);
+            parseCommands(fromId, update, msgId);
 
-        long targetId = chatMapping.getOrDefault(fromId, fromId);
-        boolean isConnected = chatMapping.containsKey(fromId);
+            long targetId = chatMapping.getOrDefault(fromId, fromId);
+            boolean isConnected = chatMapping.containsKey(fromId);
 
-        forwarder.forward(this, fromId, targetId, update);
+            forwarder.forward(this, fromId, targetId, update);
+        } catch (Exception e) {
+            System.out.println("here");
+        }
     }
 
     private final int BOTID = 0;
@@ -70,18 +74,18 @@ public class OperatorBot extends TelegramLongPollingBot {
         if (text == null) return;
         String name = usersById.getOrDefault(fromId, "" + fromId);
         System.out.println(fromId + " <- " + text);
-        text = text.replace(" ", "_");
+        String command = text.replace(" ", "_");
 
         String currentPost = onCall.get(fromId);
-        if (text.equals("#CC")) {
+        if (command.equals("#CC")) {
             Executors.newSingleThreadExecutor().execute(() -> clearChat(fromId));
-        } else if (text.equals("/start")) {
+        } else if (command.equals("/start")) {
             sendAdministrative(fromId, update, "Welcome " + name + ". Your id is: " + fromId
                     + " and your pos is " + currentPost
                     + " and you are connected to " + getConnectedTo(fromId));
-        } else if (text.startsWith("/Shift")) {
-            text = text.replace(" ", "_");
-            String newPost = (text + "  ").substring("/Shift_".length()).trim();
+        } else if (command.startsWith("/Shift")) {
+            command = command.replace(" ", "_");
+            String newPost = (command + "  ").substring("/Shift_".length()).trim();
             if (newPost.equals("end")) {
                 relieveFromWatch(fromId, update, currentPost);
             } else if (validate(newPost, fromId)) {
@@ -98,9 +102,9 @@ public class OperatorBot extends TelegramLongPollingBot {
                 sendAdministrative(fromId, update, "Available posts: " +
                         posts.stream().map(s -> "\n/Shift_" + s).collect(Collectors.toList()));
             }
-        } else if (text.startsWith("/TT")) {
-            text = text.replace(" ", "_");
-            String talkTo = (text + "  ").substring("/TT_".length()).trim();
+        } else if (command.startsWith("/TT")) {
+            command = command.replace(" ", "_");
+            String talkTo = (command + "  ").substring("/TT_".length()).trim();
             Long targetId = shifts.containsKey(talkTo) ? shifts.get(talkTo) : userIds.get(talkTo);
             if (targetId != null) {
                 if (targetId == fromId) {
@@ -119,7 +123,7 @@ public class OperatorBot extends TelegramLongPollingBot {
                 sendAdministrative(fromId, update, "No " + talkTo + " available. Try " +
                         shifts.keySet().stream().map(s -> "\n/TT_" + s).collect(Collectors.toList()));
             }
-        } else if (text.equalsIgnoreCase("END")) {
+        } else if (command.equalsIgnoreCase("END")) {
             long targetChatId = chatMapping.remove(fromId);
             sendAdministrative(fromId, update, "Disconnected from " + usersById.get(targetChatId));
             chatMapping.remove(targetChatId);
@@ -134,8 +138,7 @@ public class OperatorBot extends TelegramLongPollingBot {
     }
     private String getConnectedTo(long userId) {
         long targetId = chatMapping.get(userId);
-        if (targetId == 0) return "";
-        return usersById.get(chatMapping.get(userId));
+        return targetId == 0 ? "" : usersById.get(targetId);
     }
 
     private void relieveFromWatch(long relievedId, Update update, String position) {
