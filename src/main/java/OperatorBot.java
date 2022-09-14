@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
  * Date: 2022-09-12
  */
 public class OperatorBot extends TelegramLongPollingBot {
+    private final int BOTID = 0;
+
     @Override public String getBotUsername() {
         return "gurtenmati_bot";
     }
@@ -66,8 +68,6 @@ public class OperatorBot extends TelegramLongPollingBot {
             System.out.println("here");
         }
     }
-
-    private final int BOTID = 0;
 
     private void parseCommands(long fromId, Update update, Integer messageId) {
         String text = update.getMessage().getText();
@@ -136,6 +136,7 @@ public class OperatorBot extends TelegramLongPollingBot {
             update.getMessage().setText(header + text);
         }
     }
+
     private String getConnectedTo(long userId) {
         long targetId = chatMapping.get(userId);
         return targetId == 0 ? "" : usersById.get(targetId);
@@ -147,13 +148,13 @@ public class OperatorBot extends TelegramLongPollingBot {
         sendAdministrative(relievedId, update, usersById.get(relievedId) + " your watch has ended: " + position + ". ");
     }
 
-    private final MessageForwarder administrator = new MessageForwarder();
+    private final MessageForwarder administrative = new MessageForwarder();
     private void sendAdministrative(long targetId, Update update, String text) {
         if (text == null) return;
 
         String oldText = update.getMessage().getText();
         update.getMessage().setText(text);
-        administrator.forward(this, BOTID, targetId, update);
+        administrative.forward(this, BOTID, targetId, update);
         update.getMessage().setText(oldText);
     }
 
