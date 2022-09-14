@@ -26,6 +26,10 @@ public class AudioForwarder implements Forwarder {
         sender.setChatId(targetId);
         sender.setCaption(update.getMessage().getCaption());
         sender.setAudio(inputFile);
+        sender.setPerformer(update.getMessage().getAudio().getPerformer());
+        sender.setTitle(update.getMessage().getAudio().getTitle());
+        sender.setDuration(update.getMessage().getAudio().getDuration());
+//        sender.setThumb(update.getMessage().getAudio().getThumb());
     }
 
     @Override public void forward(TelegramLongPollingBot bot) throws TelegramApiException {
